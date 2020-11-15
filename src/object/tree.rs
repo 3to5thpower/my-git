@@ -14,7 +14,7 @@ impl Tree {
         let contents: Vec<File> = Vec::new();
         let mut iter = bytes.split(|&b| b == b'\0');
 
-        let mut header = iter().next()?;
+        let mut header = iter.next()?;
         let contents = iter.try_fold(contents, |mut acc, x| {
             let (hash, next_header) = x.split_at(20); //hash値は20byteなので20個で分割する
             let file = File::from(header, hash)?;
@@ -22,10 +22,16 @@ impl Tree {
             acc.push(file);
             header = next_header;
             Some(acc)
-        })
+        })?;
+
+        Some(Self { contents })
     }
     pub fn as_bytes(&self) -> Vec<u8> {
-        let content: Vec<u8> = self.contents.iter().flat_map(|file| file.encode()).collect();
+        let content: Vec<u8> = self
+            .contents
+            .iter()
+            .flat_map(|file| file.encode())
+            .collect();
         let header = format!("tree {}\0", content.len());
 
         [header.as_bytes(), content.as_slice()].concat()
@@ -36,12 +42,21 @@ impl Tree {
     }
 }
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "json", derive(Serialize))]
 pub struct File {
     pub mode: usize,
     pub name: String,
     pub hash: Vec<u8>,
 }
 impl File {
+    pub fn new(mode: usize, name: String, hash: &[u8]) -> Self {
+        Self {
+            mode,
+            name,
+            hash: hash.to_vec(),
+        }
+    }
     pub fn from(header: &[u8], hash: &[u8]) -> Option<Self> {
         let split_header = String::from_utf8(header.to_vec()).ok()?;
 
@@ -54,5 +69,30 @@ impl File {
     pub fn encode(&self) -> Vec<u8> {
         let header = format!("{} {}\0", self.mode, self.name);
         [header.as_bytes(), &self.hash].concat()
+    }
+}
+impl fmt::Display for File {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:>06} ??? {}\t{}",
+            self.mode,
+            hex::encode(&self.hash),
+            self.name
+        )
+    }
+}
+
+impl fmt::Display for Tree {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            (&self.contents)
+                .into_iter()
+                .map(|f| format!("{}", f))
+                .collect::<Vec<_>>()
+                .join("\n")
+        )
     }
 }

@@ -60,7 +60,7 @@ impl GitObject {
     }
 
     pub fn new(bytes: &[u8]) -> Option<Self> {
-        let iter = bytes.splitn(2, |&byte| byte == b'\0');
+        let mut iter = bytes.splitn(2, |&byte| byte == b'\0');
 
         let obj_type = iter
             .next()
@@ -72,5 +72,15 @@ impl GitObject {
             ObjectType::Tree => Tree::from(x).map(GitObject::Tree),
             ObjectType::Commit => Commit::from(x).map(GitObject::Commit),
         })
+    }
+}
+
+impl fmt::Display for GitObject {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Blob(obj) => obj.fmt(f),
+            Self::Tree(obj) => obj.fmt(f),
+            Self::Commit(obj) => obj.fmt(f),
+        }
     }
 }

@@ -4,21 +4,30 @@ use serde::Serialize;
 use sha1::{Digest, Sha1};
 use std::fmt;
 
+#[derive(Debug, Clone)]
 pub struct User {
     pub name: String,
     pub email: String,
     pub timestamp: DateTime<FixedOffset>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Commit {
     pub tree: String,
     pub parent: Option<String>,
-    pub autor: User,
+    pub author: User,
     pub committer: User,
     pub message: String,
 }
 
 impl User {
+    pub fn new(name: String, email: String, timestamp: DateTime<FixedOffset>) -> Self {
+        Self {
+            name,
+            email,
+            timestamp,
+        }
+    }
     pub fn from(bytes: &[u8]) -> Option<Self> {
         //bytesは"USER_NAME <EMAIL> TIME_STAMP OFFSET"のようになっている
         let name = String::from_utf8(
@@ -67,6 +76,21 @@ impl User {
 }
 
 impl Commit {
+    pub fn new(
+        tree: String,
+        parent: Option<String>,
+        author: User,
+        committer: User,
+        message: String,
+    ) -> Self {
+        Self {
+            tree,
+            parent,
+            author,
+            committer,
+            message,
+        }
+    }
     pub fn from(bytes: &[u8]) -> Option<Self> {
         let mut iter = bytes.split(|&c| c == b'\n').filter(|s| s != b"");
 
@@ -152,8 +176,8 @@ impl fmt::Display for User {
             "{} <{}> {} {:+05}",
             self.name,
             self.email,
-            self.ts.timestamp(),
-            self.ts.offset().local_minus_utc() / 36
+            self.timestamp.timestamp(),
+            self.timestamp.offset().local_minus_utc() / 36
         )
     }
 }
