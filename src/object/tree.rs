@@ -30,6 +30,10 @@ impl Tree {
 
         [header.as_bytes(), content.as_slice()].concat()
     }
+    pub fn calc_hash(&self) -> Vec<u8> {
+        let bytes = self.as_bytes();
+        Vec::from(Sha1::digest(&bytes).as_slice())
+    }
 }
 
 pub struct File {
